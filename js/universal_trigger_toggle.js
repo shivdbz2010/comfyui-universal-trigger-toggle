@@ -113,26 +113,35 @@ app.registerExtension({
                 });
                 node.tagWidget = tagWidget;
 
-                const syncFromInput = async () => {
-                    const input = node.inputs?.find(i => i.name === "trigger_words");
-                    if (!input?.link) return;
+            const syncFromInput = async () => {
+                const input = node.inputs?.find(i => i.name === "trigger_words");
+                if (!input?.link) return;
 
-                    const link = app.graph.links[input.link];
-                    const originNode = app.graph.getNodeById(link.origin_id);
-                    if (!originNode || !originNode.widgets) return;
+                const link = app.graph.links[input.link];
+                const originNode = app.graph.getNodeById(link.origin_id);
+                if (!originNode || !originNode.widgets) return;
 
-                    let raw = "";
-                    for (const w of originNode.widgets) {
-                        if (typeof w.value === "string" && w.value.trim()) {
-                            // Check if value is a lora path or trigger words
-                            if (w.value.includes(".safetensors") || w.value.startsWith("[") || w.name === "trigger_words") {
-                                raw = w.value;
-                                break;
-                            }
+                let raw = "";
+                
+                // 1. First Pass: Look for specific Lora/Trigger widgets
+                for (const w of originNode.widgets) {
+                    if (typeof w.value === "string" && w.value.trim()) {
+                        if (w.value.includes(".safetensors") || w.name === "trigger_words" || w.name === "lora_name") {
+                            raw = w.value;
+                            break;
                         }
                     }
+                }
 
-                    if (!raw) return;
+                // 2. Second Pass: If still empty, take the first non-empty string widget available
+                if (!raw) {
+                    const stringWidget = originNode.widgets.find(w => typeof w.value === "string" && w.value.length > 0);
+                    if (stringWidget) raw = stringWidget.value;
+                }
+
+                if (!raw) return;
+
+                // ... [Rest of the processing logic remains the same] ...
 
                     let processed = raw;
                     try {
